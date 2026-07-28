@@ -50,16 +50,17 @@ const tools = [
     functionDeclarations: [
       {
         name: 'addExpense',
-        description: 'Add a new expense transaction. Use when user asks to record spending or expense in English, Hindi, Hinglish, or any language.',
+        description: 'Add a new transaction (income or expense). Use when user asks to record spending, expense, or income in any language.',
         parameters: {
           type: SchemaType.OBJECT,
           properties: {
-            title: { type: SchemaType.STRING, description: 'Brief description of expense' },
-            amount: { type: SchemaType.NUMBER, description: 'Amount spent in Indian Rupees (INR)' },
-            category: { type: SchemaType.STRING, description: 'Category name' },
+            type: { type: SchemaType.STRING, description: 'Must be either "expense" or "income"' },
+            title: { type: SchemaType.STRING, description: 'Brief description of transaction' },
+            amount: { type: SchemaType.NUMBER, description: 'Amount in Indian Rupees (INR)' },
+            category: { type: SchemaType.STRING, description: 'Category name (e.g. Salary, Food & Dining)' },
             paymentMethod: { type: SchemaType.STRING, description: 'Payment method e.g. UPI / Digital, Cash, Credit Card, Debit Card, Bank Transfer' }
           },
-          required: ['title', 'amount', 'category']
+          required: ['type', 'title', 'amount', 'category']
         }
       },
       {
@@ -261,17 +262,17 @@ export const generateChatResponse = async (req: Request, res: Response) => {
     const prompt = isAgentMode
       ? `
       You are SpendWise AI, an autonomous financial AGENT. 
-      You help users manage their money, track expenses, set budgets, and create savings goals/categories in /budgeting.
+      You help users manage their money, track both INCOMES and EXPENSES, set budgets, and create savings goals.
       You support MULTILINGUAL inputs including English, Hindi (हिंदी), and Hinglish (e.g., "aaj 500 rupaye khana pe kharch hue").
       
       IMPORTANT RULES:
       1. Always use Indian Rupees (INR / ₹) for amounts.
-      2. If the user tells you about spending money, setting a budget cap, or adding a category/goal in any language (Hindi/Hinglish/English), USE THE PROVIDED TOOLS ('addExpense', 'addGoal', 'setBudget', 'addCategory', 'bulkAddExpenses') to take real action immediately!
+      2. If the user tells you about spending money or earning money, USE THE 'addExpense' TOOL! Make sure to correctly set the \`type\` field to either "expense" or "income".
       3. CRITICAL: If the user speaks in Hindi or Hinglish, ALWAYS respond in HINGLISH (using English/Roman letters like "Maine aapka ₹500 ka expense add kar diya hai!"). NEVER use Devanagari Hindi script.
-      4. Keep your conversational response concise, clear, and formatted nicely in Markdown.
-      5. If a user uploads a transaction file, bank statement, or receipt, analyze it and extract all expenses. Use the 'bulkAddExpenses' tool to add them all at once. Extract the exact date for each transaction if available. ONLY extract Debits or negative amounts (-) as expenses. IGNORE any Credits or positive amounts (+) because the app only tracks expenses, not incomes.
+      4. SMART DECISIONS: When the user asks for advice or a summary, calculate their Total Income and Total Expenses from the provided JSON. Calculate their Net Balance (Income - Expense). Provide smart, actionable financial advice based on their current net balance and budgets. Tell them how much they are saving or if they are overspending.
+      5. If a user uploads a transaction file, bank statement, or receipt, analyze it and extract all transactions. Use the 'bulkAddExpenses' tool to add them all at once. Extract the exact date for each transaction if available.
       
-      User's current expense data (JSON format):
+      User's current transaction data (JSON format):
       ${JSON.stringify(expenses?.slice(0, 30) || [])}
       
       User's budget caps (JSON format):
@@ -287,15 +288,16 @@ export const generateChatResponse = async (req: Request, res: Response) => {
     `
       : `
       You are SpendWise AI, a helpful personal financial assistant.
-      You answer questions about the user's spending habits, budgets, and savings.
+      You answer questions about the user's spending habits, budgets, savings, and income.
       You support English, Hindi, and Hinglish.
       
       IMPORTANT RULES:
       1. Always use Indian Rupees (INR / ₹) for amounts.
       2. You are in NORMAL CHAT MODE: Do not execute actions, just answer the user's questions clearly and concisely.
       3. If the user speaks in Hindi or Hinglish, ALWAYS respond in HINGLISH (using English/Roman letters). NEVER use Devanagari Hindi script.
+      4. SMART DECISIONS: Analyze the user's Total Income vs Total Expenses from the provided JSON. Calculate their Net Balance and Savings Rate. Provide smart, strategic financial advice to help them save more, cut unnecessary expenses, and optimize their budget.
       
-      User's current expense data (JSON format):
+      User's current transaction data (JSON format):
       ${JSON.stringify(expenses?.slice(0, 30) || [])}
       
       User's budget caps (JSON format):
@@ -338,11 +340,12 @@ export const generateChatResponse = async (req: Request, res: Response) => {
       if (functionCalls && functionCalls.length > 0) {
         for (const call of functionCalls) {
           if (call.name === 'addExpense') {
-            const { title, amount, category, paymentMethod } = call.args as any;
+            const { type, title, amount, category, paymentMethod } = call.args as any;
             await ensureCategoryExists(category || 'Other', userId);
             const today = new Date().toISOString().split('T')[0];
             const newExp = new Expense({
-              title: title || category || 'Expense',
+              type: type === 'income' ? 'income' : 'expense',
+              title: title || category || 'Transaction',
               amount: Number(amount),
               category: category || 'Other',
               date: today,
@@ -350,7 +353,7 @@ export const generateChatResponse = async (req: Request, res: Response) => {
               userId,
             });
             await newExp.save();
-            actionExecuted = `Added Expense: ${title} (₹${amount}) in ${category}`;
+            actionExecuted = `Added ${type === 'income' ? 'Income' : 'Expense'}: ${title} (₹${amount}) in ${category}`;
           } else if (call.name === 'addGoal') {
             const { title, targetAmount, deadline, autoSaveAmount } = call.args as any;
             const defaultDeadline = new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().split('T')[0];

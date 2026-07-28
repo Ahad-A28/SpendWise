@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Activity, Flame } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Activity, Flame, Wallet, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { Expense, CategoryBudget, YesterdayComparison } from '../lib/types';
-import { calculateTotalSpent, filterExpensesByMonth } from '../lib/analytics';
+import { calculateTotalSpent, calculateTotalIncome, filterExpensesByMonth } from '../lib/analytics';
 
 interface SummaryCardsProps {
   expenses: Expense[];
@@ -20,7 +20,10 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 }) => {
   const now = new Date();
   const currentMonthExpenses = filterExpensesByMonth(expenses, now.getFullYear(), now.getMonth());
+  
   const currentMonthSpent = calculateTotalSpent(currentMonthExpenses);
+  const currentMonthIncome = calculateTotalIncome(currentMonthExpenses);
+  const netBalance = currentMonthIncome - currentMonthSpent;
 
   const totalMonthlyBudget = budgets.reduce((sum, b) => sum + b.allocated, 0);
   const budgetPercentage = totalMonthlyBudget > 0 ? Math.min(100, Math.round((currentMonthSpent / totalMonthlyBudget) * 100)) : 0;
@@ -42,12 +45,44 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
 
   return (
     <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      {/* 1. Month Total Spent */}
+      {/* 1. Net Balance */}
       <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">This Month</span>
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-            <DollarSign className="w-4 h-4" />
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Net Balance</span>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${netBalance >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+            <Wallet className="w-4 h-4" />
+          </div>
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            {netBalance >= 0 ? '+' : '-'}₹{Math.abs(netBalance).toLocaleString()}
+          </div>
+          <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <span>Income vs Expenses this month</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Total Income */}
+      <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Monthly Income</span>
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+            <ArrowDownCircle className="w-4 h-4" />
+          </div>
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">₹{currentMonthIncome.toLocaleString()}</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Total earnings logged</p>
+        </div>
+      </div>
+
+      {/* 3. Total Expenses */}
+      <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Monthly Expenses</span>
+          <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center">
+            <ArrowUpCircle className="w-4 h-4" />
           </div>
         </div>
         <div>
@@ -73,58 +108,12 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
         </div>
       </div>
 
-      {/* 2. Today vs Yesterday */}
-      <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Today vs Yesterday</span>
-          <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-              yesterdayComparison.isImproved
-                ? 'bg-emerald-500/10 text-emerald-400'
-                : 'bg-rose-500/10 text-rose-400'
-            }`}
-          >
-            {yesterdayComparison.isImproved ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-          </div>
-        </div>
-        <div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">₹{yesterdayComparison.todaySpent}</span>
-            <span
-              className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                yesterdayComparison.isImproved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
-              }`}
-            >
-              {yesterdayComparison.isImproved ? '-' : '+'}
-              {Math.abs(yesterdayComparison.percentageChange)}%
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Yesterday: ₹{yesterdayComparison.yesterdaySpent}</p>
-        </div>
-      </div>
-
-      {/* 3. Daily Average Spend */}
-      <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Daily Average Spend</span>
-          <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center">
-            <Activity className="w-4 h-4" />
-          </div>
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            ₹{dailyAverageSpend.toLocaleString()}
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Average spent per day this month</p>
-        </div>
-      </div>
-
       {/* 4. Safe to Spend Today */}
       <div className="flex-none w-[85vw] max-w-[320px] snap-center sm:w-auto p-5 rounded-2xl glass-card glass-card-hover space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Safe to Spend Today</span>
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            isOverpacing ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'
+            isOverpacing ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'
           }`}>
             <Flame className="w-4 h-4" />
           </div>

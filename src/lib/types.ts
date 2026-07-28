@@ -10,6 +10,7 @@ export type PaymentMethod = 'Credit Card' | 'Debit Card' | 'Cash' | 'Bank Transf
 
 export interface Expense {
   id: string;
+  type?: 'expense' | 'income';
   title: string;
   amount: number;
   category: CategoryType;

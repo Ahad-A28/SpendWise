@@ -24,6 +24,7 @@ const PAYMENT_ICONS: Record<string, string> = {
 };
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClose, onAddExpense, categories }) => {
+  const [type, setType] = useState<'expense' | 'income'>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<CategoryType>('Food & Dining');
@@ -43,6 +44,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClos
     }
 
     onAddExpense({
+      type,
       title: title.trim(),
       amount: numAmount,
       category,
@@ -56,6 +58,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClos
       confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
     } catch (e) { /* ignore */ }
 
+    setType('expense');
     setTitle('');
     setAmount('');
     setNotes('');
@@ -78,7 +81,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClos
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 sm:pt-5">
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">New Expense</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">New Transaction</h2>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Fill in the details below</p>
           </div>
           <button
@@ -110,6 +113,24 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClos
 
         {/* Scrollable Body */}
         <form id="add-expense-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 space-y-5 pb-2">
+
+          {/* Type Toggle */}
+          <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800">
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${type === 'expense' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+            >
+              Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${type === 'income' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}
+            >
+              Income
+            </button>
+          </div>
 
           {/* Title */}
           <div>
@@ -223,7 +244,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({ isOpen, onClos
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg shadow-indigo-500/30 transition-all active:scale-[.98]"
           >
             <Check className="w-4 h-4" />
-            Save Expense
+            Save {type === 'expense' ? 'Expense' : 'Income'}
           </button>
         </div>
 

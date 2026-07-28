@@ -2,7 +2,11 @@ import { Expense, CategoryBudget, SpendingInsight, MonthComparison, YesterdayCom
 import { getTodayStr, getYesterdayStr } from './storage';
 
 export function calculateTotalSpent(expenses: Expense[]): number {
-  return expenses.reduce((acc, curr) => acc + curr.amount, 0);
+  return expenses.filter(e => e.type !== 'income').reduce((acc, curr) => acc + curr.amount, 0);
+}
+
+export function calculateTotalIncome(expenses: Expense[]): number {
+  return expenses.filter(e => e.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
 }
 
 export function filterExpensesByMonth(expenses: Expense[], targetYear: number, targetMonthIdx: number): Expense[] {
@@ -16,8 +20,8 @@ export function calculateYesterdayVsToday(expenses: Expense[]): YesterdayCompari
   const today = getTodayStr();
   const yesterday = getYesterdayStr();
 
-  const todayExpenses = expenses.filter(e => e.date === today);
-  const yesterdayExpenses = expenses.filter(e => e.date === yesterday);
+  const todayExpenses = expenses.filter(e => e.date === today && e.type !== 'income');
+  const yesterdayExpenses = expenses.filter(e => e.date === yesterday && e.type !== 'income');
 
   const todaySpent = todayExpenses.reduce((sum, item) => sum + item.amount, 0);
   const yesterdaySpent = yesterdayExpenses.reduce((sum, item) => sum + item.amount, 0);
@@ -41,7 +45,7 @@ export function calculateYesterdayVsToday(expenses: Expense[]): YesterdayCompari
     checkDate.setDate(checkDate.getDate() - i);
     const dateStr = checkDate.toISOString().split('T')[0];
     const daySpent = expenses
-      .filter(e => e.date === dateStr)
+      .filter(e => e.date === dateStr && e.type !== 'income')
       .reduce((s, e) => s + e.amount, 0);
     
     if (daySpent <= 75) {
@@ -88,11 +92,11 @@ export function calculateMonthOverMonthComparison(expenses: Expense[]): MonthCom
 
   return categories.map(category => {
     const currentMonthSpent = currentMonthExpenses
-      .filter(e => e.category === category)
+      .filter(e => e.category === category && e.type !== 'income')
       .reduce((sum, e) => sum + e.amount, 0);
 
     const previousMonthSpent = prevMonthExpenses
-      .filter(e => e.category === category)
+      .filter(e => e.category === category && e.type !== 'income')
       .reduce((sum, e) => sum + e.amount, 0);
 
     const diffAmount = currentMonthSpent - previousMonthSpent;
@@ -151,7 +155,7 @@ export function generateSmartReductionInsights(
   }
 
   // 2. Subscriptions Audit Tip
-  const subExpenses = expenses.filter(e => e.category === 'Subscriptions' || e.isRecurring);
+  const subExpenses = expenses.filter(e => (e.category === 'Subscriptions' || e.isRecurring) && e.type !== 'income');
   const subTotal = subExpenses.reduce((sum, e) => sum + e.amount, 0);
   if (subTotal > 30) {
     insights.push({
@@ -169,7 +173,7 @@ export function generateSmartReductionInsights(
   // 3. Category Budget Overrun Alerts
   budgets.forEach(b => {
     const categorySpent = currentMonthExpenses
-      .filter(e => e.category === b.category)
+      .filter(e => e.category === b.category && e.type !== 'income')
       .reduce((sum, e) => sum + e.amount, 0);
 
     if (categorySpent >= b.allocated * 0.85) {

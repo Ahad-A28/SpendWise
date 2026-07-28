@@ -183,8 +183,10 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
 
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{expense.paymentMethod}</td>
 
-                      <td className="px-4 py-3 text-right font-extrabold text-slate-900 dark:text-white text-xs whitespace-nowrap">
-                        ₹{expense.amount.toFixed(2)}
+                      <td className="px-4 py-3 text-right font-extrabold text-xs whitespace-nowrap">
+                        <span className={expense.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}>
+                          {expense.type === 'income' ? '+' : '-'}₹{expense.amount.toFixed(2)}
+                        </span>
                       </td>
 
                       <td className="px-4 py-3 text-center">
@@ -218,7 +220,9 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
                       {expense.notes && <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 italic">{expense.notes}</p>}
                     </div>
                     <div className="flex flex-col items-end">
-                      <div className="font-extrabold text-slate-900 dark:text-white text-sm tracking-tight">₹{expense.amount.toFixed(2)}</div>
+                      <div className={`font-extrabold text-sm tracking-tight ${expense.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                        {expense.type === 'income' ? '+' : '-'}₹{expense.amount.toFixed(2)}
+                      </div>
                       <button 
                         onClick={() => onDeleteExpense(expense.id)} 
                         className="text-slate-400 hover:text-rose-400 p-1 mt-1 transition-colors"

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IExpense extends Document {
   userId: string;
+  type: 'expense' | 'income';
   title: string;
   amount: number;
   category: string;
@@ -14,6 +15,7 @@ export interface IExpense extends Document {
 
 const ExpenseSchema: Schema = new Schema({
   userId: { type: String, required: true },
+  type: { type: String, enum: ['expense', 'income'], default: 'expense' },
   title: { type: String, required: true },
   amount: { type: Number, required: true },
   category: { type: String, required: true },
