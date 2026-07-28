@@ -1,0 +1,9 @@
+import express from 'express';
+import { generateChatResponse, getAiCredits } from '../controllers/chatController';
+
+const router = express.Router();
+
+router.get('/credits', getAiCredits);
+router.post('/', generateChatResponse);
+
+export default router;
