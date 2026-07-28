@@ -9,7 +9,7 @@ import { ExpenseTable } from '../components/Expenses/ExpenseTable';
 import { ExpensePieChart } from '../components/Charts/ExpensePieChart';
 
 export default function DashboardPage() {
-  const { expenses, budgets, categories, isMounted, handleLoadSampleData, handleDeleteExpense } = useAppContext();
+  const { expenses, budgets, categories, isMounted, handleLoadSampleData, handleDeleteExpense, handleDeleteAllExpenses } = useAppContext();
 
   if (!isMounted) return null;
 
@@ -58,6 +58,7 @@ export default function DashboardPage() {
               expenses={expenses}
               categories={categories}
               onDeleteExpense={handleDeleteExpense}
+              onDeleteAllExpenses={handleDeleteAllExpenses}
             />
           </div>
           <div className="xl:col-span-1">

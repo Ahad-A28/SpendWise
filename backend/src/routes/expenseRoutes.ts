@@ -1,11 +1,12 @@
 import express from 'express';
-import { getExpenses, addExpense, deleteExpense } from '../controllers/expenseController.js';
+import { getExpenses, addExpense, deleteExpense, deleteAllExpenses } from '../controllers/expenseController.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(getExpenses)
-  .post(addExpense);
+  .post(addExpense)
+  .delete(deleteAllExpenses);
 
 router.route('/:id')
   .delete(deleteExpense);

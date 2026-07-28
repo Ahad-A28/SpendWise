@@ -53,3 +53,15 @@ export const deleteExpense = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to delete expense' });
   }
 };
+
+export const deleteAllExpenses = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).auth?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    await (Expense as any).deleteMany({ userId });
+    res.json({ success: true, message: 'All expenses deleted successfully' });
+  } catch (error) {
+    console.error('Failed to delete all expenses', error);
+    res.status(500).json({ error: 'Failed to delete all expenses' });
+  }
+};

@@ -15,6 +15,7 @@ interface AppContextType {
   isOffline: boolean;
   handleAddExpense: (newExpenseData: Omit<Expense, 'id'>) => Promise<void>;
   handleDeleteExpense: (id: string) => Promise<void>;
+  handleDeleteAllExpenses: () => Promise<void>;
   handleSaveBudgets: (newBudgets: CategoryBudget[]) => Promise<void>;
   handleSaveCategories: (newCats: Record<string, { color: string; bg: string; icon: string }>) => Promise<void>;
   handleLoadSampleData: () => Promise<void>;
@@ -245,6 +246,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const handleDeleteAllExpenses = async () => {
+    try {
+      const isOnline = navigator.onLine;
+      const currentToken = token;
+      if (isOffline || !isOnline) {
+        setExpenses([]);
+        queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, 'DELETE');
+        return;
+      }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, { 
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${currentToken}` }
+      });
+      if (res.ok) {
+        setExpenses([]);
+      }
+    } catch (err) {
+      console.error('Error deleting all expenses:', err);
+    }
+  };
+
   const handleSaveBudgets = async (newBudgets: CategoryBudget[]) => {
     try {
       const isOnline = navigator.onLine;
@@ -413,6 +435,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isOffline,
         handleAddExpense,
         handleDeleteExpense,
+        handleDeleteAllExpenses,
         handleSaveBudgets,
         handleSaveCategories,
         handleLoadSampleData,

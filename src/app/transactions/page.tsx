@@ -7,7 +7,7 @@ import { SpendingComparisonTable } from '../../components/Expenses/SpendingCompa
 import { Download, X } from 'lucide-react';
 
 export default function TransactionsPage() {
-  const { expenses, categories, isMounted, handleDeleteExpense } = useAppContext();
+  const { expenses, categories, isMounted, handleDeleteExpense, handleDeleteAllExpenses } = useAppContext();
   const [isExporting, setIsExporting] = useState(false);
   const [exportStart, setExportStart] = useState('');
   const [exportEnd, setExportEnd] = useState('');
@@ -112,6 +112,7 @@ export default function TransactionsPage() {
       <ExpenseTable
         expenses={expenses}
         onDeleteExpense={handleDeleteExpense}
+        onDeleteAllExpenses={handleDeleteAllExpenses}
         categories={categories}
       />
 

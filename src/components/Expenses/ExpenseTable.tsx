@@ -8,6 +8,7 @@ import { Search, Trash2, ArrowUpDown, PlusCircle } from 'lucide-react';
 interface ExpenseTableProps {
   expenses: Expense[];
   onDeleteExpense: (id: string) => void;
+  onDeleteAllExpenses?: () => void;
   onAddExpense?: () => void;
   categories: Record<string, { color: string; bg: string; icon: string }>;
 }
@@ -15,6 +16,7 @@ interface ExpenseTableProps {
 export const ExpenseTable: React.FC<ExpenseTableProps> = ({
   expenses,
   onDeleteExpense,
+  onDeleteAllExpenses,
   onAddExpense,
   categories,
 }) => {
@@ -60,6 +62,20 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent Transactions</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">View and manage logged expenses</p>
         </div>
+        {expenses.length > 0 && onDeleteAllExpenses && (
+          <button
+            onClick={() => {
+              if (window.confirm('WARNING: This will permanently delete ALL your transactions. This action cannot be undone. Are you sure?')) {
+                onDeleteAllExpenses();
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-200 dark:border-rose-800"
+            title="Delete all transactions"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete All
+          </button>
+        )}
       </div>
 
       {/* Filter Controls */}
