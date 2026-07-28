@@ -1,0 +1,1 @@
+{"version":3,"file":"AppSetting.d.ts","sourceRoot":"","sources":["../../src/models/AppSetting.ts"],"names":[],"mappings":"AAAA,OAAO,QAAQ,EAAE,EAAU,QAAQ,EAAE,MAAM,UAAU,CAAC;AAEtD,MAAM,WAAW,YAAa,SAAQ,QAAQ;IAC5C,MAAM,EAAE,MAAM,CAAC;IACf,GAAG,EAAE,MAAM,CAAC;IACZ,KAAK,EAAE,GAAG,CAAC;CACZ;AAUD,QAAA,MAAM,UAAU;;;;;;qBAAgI,CAAC;eAElI,UAAU"}
