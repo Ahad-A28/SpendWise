@@ -68,23 +68,40 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { credential } = req.body;
-    if (!credential) {
-      res.status(400).json({ error: 'Google credential missing' });
+    const { credential, access_token } = req.body;
+    if (!credential && !access_token) {
+      res.status(400).json({ error: 'Google credentials missing' });
       return;
     }
 
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    if (!payload || !payload.email) {
-      res.status(400).json({ error: 'Invalid Google token' });
-      return;
-    }
+    let email, given_name, family_name, picture, sub;
 
-    const { email, given_name, family_name, picture, sub } = payload;
+    if (credential) {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        res.status(400).json({ error: 'Invalid Google token' });
+        return;
+      }
+      ({ email, given_name, family_name, picture, sub } = payload);
+    } else if (access_token) {
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      if (!userResponse.ok) {
+        res.status(400).json({ error: 'Failed to fetch user info from Google' });
+        return;
+      }
+      const userData = await userResponse.json();
+      email = userData.email;
+      given_name = userData.given_name;
+      family_name = userData.family_name;
+      picture = userData.picture;
+      sub = userData.sub;
+    }
 
     let user = await User.findOne({ email });
     if (!user) {
