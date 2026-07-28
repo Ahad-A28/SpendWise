@@ -1,22 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { AddExpenseModal } from './Modals/AddExpenseModal';
 import { NotificationDrawer } from './Notifications/NotificationDrawer';
 import { saveNotificationsToStorage } from '../lib/storage';
 import InstallPrompt from './InstallPrompt';
 import NotificationPermissionPrompt from './NotificationPermissionPrompt';
+import { Loader2 } from 'lucide-react';
 
 export const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const { expenses, notifications, setNotifications } = useAppContext();
+  const { user, isLoading } = useAuth();
+
+  const isAuthPage = pathname === '/sign-in' || pathname === '/sign-up';
+
+  useEffect(() => {
+    if (!isLoading && !user && !isAuthPage) {
+      router.push('/sign-in');
+    }
+  }, [user, isLoading, isAuthPage, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user && !isAuthPage) {
+    return null;
+  }
+
+  if (isAuthPage) {
+    return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">{children}</div>;
+  }
 
   if (pathname === '/x7k9mq2n') {
     return <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">{children}</div>;

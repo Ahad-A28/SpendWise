@@ -5,7 +5,7 @@ import { Expense, CategoryBudget } from '../../lib/types';
 import { generateAIResponse } from '../../lib/ai';
 import { Bot, User, Send, Sparkles, Coins, Lock, Mic, MicOff, CheckCircle2, Zap, MessageSquare, Paperclip, X, Lightbulb, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useAuth, useUser } from '@clerk/nextjs';
+import { useAuth } from '../../context/AuthContext';
 
 // ── Mobile-optimised AI message renderer ────────────────────────────────────
 function MobileAIMessage({ content }: { content: string }) {
@@ -171,14 +171,12 @@ export const AiChatBot: React.FC<AiChatBotProps> = ({ expenses, budgets, initial
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
-  const { getToken } = useAuth();
-  const { user } = useUser();
-  const userImageUrl = user?.imageUrl;
-  const userInitials = user?.firstName?.charAt(0)?.toUpperCase() || user?.emailAddresses?.[0]?.emailAddress?.charAt(0)?.toUpperCase() || '?';
+  const { token, user } = useAuth();
+  const userImageUrl = user?.avatarUrl;
+  const userInitials = user?.firstName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?';
 
   useEffect(() => {
     const fetchCredits = async () => {
-      const token = await getToken();
       if (!token) return;
       fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/chat/credits`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -313,7 +311,7 @@ export const AiChatBot: React.FC<AiChatBotProps> = ({ expenses, budgets, initial
     setIsLoading(true);
 
     try {
-      const token = await getToken();
+      if (!token) return;
       const result: any = await generateAIResponse(userMessage.content, expenses, budgets, isAgentMode, token, fileDataToSend);
 
       if (result.error) {

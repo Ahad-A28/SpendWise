@@ -36,24 +36,16 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-import { clerkMiddleware, getAuth } from '@clerk/express';
-import type { Request, Response, NextFunction } from 'express';
-
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  const auth = getAuth(req);
-  if (!auth.userId) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  (req as any).auth = auth;
-  next();
-};
+import { requireAuth } from './middleware/auth.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Routes
-app.use('/api/expenses', clerkMiddleware(), requireAuth, expenseRoutes);
-app.use('/api/budgets', clerkMiddleware(), requireAuth, budgetRoutes);
-app.use('/api/categories', clerkMiddleware(), requireAuth, categoryRoutes);
-app.use('/api/chat', clerkMiddleware(), requireAuth, chatRoutes);
-app.use('/api/goals', clerkMiddleware(), requireAuth, goalRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/expenses', requireAuth, expenseRoutes);
+app.use('/api/budgets', requireAuth, budgetRoutes);
+app.use('/api/categories', requireAuth, categoryRoutes);
+app.use('/api/chat', requireAuth, chatRoutes);
+app.use('/api/goals', requireAuth, goalRoutes);
 app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;

@@ -1,13 +1,13 @@
 import type { Request, Response } from 'express';
-import Budget from '../models/Budget';
+import Budget from '../models/Budget.js';
 
 export const getBudgets = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).auth?.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const budgets = await Budget.find({ userId });
+    const budgets = await (Budget as any).find({ userId });
     
-    const formatted = budgets.map(b => {
+    const formatted = budgets.map((b: any) => {
       const obj = b.toObject();
       obj.id = obj._id.toString();
       delete obj._id;
@@ -32,7 +32,7 @@ export const getBudgets = async (req: Request, res: Response) => {
       ];
       
       const defaultsWithUserId = defaults.map(d => ({ ...d, userId }));
-      await Budget.insertMany(defaultsWithUserId);
+      await (Budget as any).insertMany(defaultsWithUserId);
       
       res.json(defaults);
     }
@@ -48,11 +48,11 @@ export const saveBudgets = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const data = req.body; 
     
-    await Budget.deleteMany({ userId });
+    await (Budget as any).deleteMany({ userId });
     
     if (data && data.length > 0) {
       const dataWithUserId = data.map((d: any) => ({ ...d, userId }));
-      await Budget.insertMany(dataWithUserId);
+      await (Budget as any).insertMany(dataWithUserId);
     }
     
     res.json({ success: true });

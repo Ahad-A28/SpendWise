@@ -374,7 +374,7 @@ export const generateChatResponse = async (req: Request, res: Response) => {
             await ensureCategoryExists(category, userId);
             
             // 2. Upsert into Budget collection so it shows in Monthly Budgets
-            await Budget.findOneAndUpdate(
+            await (Budget as any).findOneAndUpdate(
               { category, userId },
               { category, allocated: budgetAmt, userId },
               { upsert: true, new: true }

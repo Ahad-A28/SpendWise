@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Plus, Database, Menu, Sun, Moon } from 'lucide-react';
 import { NotificationItem } from '../lib/types';
 import { useTheme } from 'next-themes';
-import { UserButton } from '@clerk/nextjs';
+import { useAuth } from '../context/AuthContext';
 import { usePathname } from 'next/navigation';
 
 interface HeaderProps {
@@ -37,8 +37,10 @@ export const Header: React.FC<HeaderProps> = ({
   const unreadCount = notifications.filter(n => !n.read).length;
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const pathname = usePathname();
   const pageTitle = PAGE_TITLES[pathname] ?? 'SpendWise';
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -121,8 +123,41 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Avatar — same visual height */}
-          <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-            <UserButton />
+          <div className="relative w-9 h-9 flex items-center justify-center flex-shrink-0">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="w-full h-full rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-800"
+            >
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-sm">
+                  {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                </div>
+              )}
+            </button>
+
+            {showDropdown && (
+              <div className="absolute top-12 right-0 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg py-2 z-50">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {user?.email}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    logout();
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

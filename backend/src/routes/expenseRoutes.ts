@@ -1,5 +1,5 @@
 import express from 'express';
-import { getExpenses, addExpense, deleteExpense } from '../controllers/expenseController';
+import { getExpenses, addExpense, deleteExpense } from '../controllers/expenseController.js';
 
 const router = express.Router();
 

@@ -4,7 +4,8 @@ import './globals.css';
 import { ThemeProvider } from '../components/ThemeProvider';
 import { AppProvider } from '../context/AppContext';
 import { LayoutWrapper } from '../components/LayoutWrapper';
-import { ClerkProvider } from '@clerk/nextjs';
+import { AuthProvider } from '../context/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -42,18 +43,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${inter.className} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased`}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <AppProvider>
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
-            </AppProvider>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased`}>
+        <AuthProvider>
+          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              <AppProvider>
+                <LayoutWrapper>
+                  {children}
+                </LayoutWrapper>
+              </AppProvider>
+            </ThemeProvider>
+          </GoogleOAuthProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

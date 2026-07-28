@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express';
-import Goal from '../models/Goal';
+import Goal from '../models/Goal.js';
 
 export const getGoals = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).auth?.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-    const goals = await Goal.find({ userId }).sort({ createdAt: -1 });
+    const goals = await (Goal as any).find({ userId }).sort({ createdAt: -1 });
     const formatted = [];
     const now = new Date();
 
@@ -69,7 +69,7 @@ export const updateGoal = async (req: Request, res: Response) => {
     const userId = (req as any).auth?.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { id } = req.params;
-    const updated = await Goal.findOneAndUpdate({ _id: id, userId }, req.body, { new: true });
+    const updated = await (Goal as any).findOneAndUpdate({ _id: id, userId }, req.body, { new: true });
     
     if (!updated) {
       return res.status(404).json({ error: 'Goal not found' });
@@ -92,7 +92,7 @@ export const deleteGoal = async (req: Request, res: Response) => {
     const userId = (req as any).auth?.userId;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { id } = req.params;
-    await Goal.findOneAndDelete({ _id: id, userId });
+    await (Goal as any).findOneAndDelete({ _id: id, userId });
     res.json({ success: true });
   } catch (error) {
     console.error('Failed to delete goal', error);
@@ -107,7 +107,7 @@ export const contributeToGoal = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { amount } = req.body;
     
-    const goal = await Goal.findOne({ _id: id, userId });
+    const goal = await (Goal as any).findOne({ _id: id, userId });
     if (!goal) {
       return res.status(404).json({ error: 'Goal not found' });
     }

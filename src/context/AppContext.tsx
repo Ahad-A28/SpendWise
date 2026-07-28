@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Expense, CategoryBudget, NotificationItem, Goal } from '../lib/types';
 import { loadNotificationsFromStorage, saveNotificationsToStorage, getSampleInitialExpenses } from '../lib/storage';
 import { addInAppNotification } from '../lib/notifications';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from './AuthContext';
 
 interface AppContextType {
   expenses: Expense[];
@@ -36,14 +36,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isMounted, setIsMounted] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
-  const { getToken, isLoaded, userId } = useAuth();
+  const { token, user, isLoading } = useAuth();
 
   useEffect(() => {
     setIsMounted(true);
     const fetchData = async () => {
-      if (!isLoaded || !userId) return;
+      if (isLoading || !user || !token) return;
       try {
-        const token = await getToken();
         const headers = { 'Authorization': `Bearer ${token}` };
         
         const [expRes, budgRes, catRes, goalRes] = await Promise.all([
@@ -64,7 +63,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     fetchData();
-  }, [isLoaded, userId]);
+  }, [isLoading, user, token]);
 
   const queueRequest = (url: string, method: string, body?: any) => {
     const queue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
@@ -77,7 +76,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (queue.length === 0) return;
 
     try {
-      const token = await getToken();
+      if (!token) return;
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
       for (const req of queue) {
@@ -126,7 +125,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const handleAddExpense = async (newExpenseData: Omit<Expense, 'id'>) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const isOnline = navigator.onLine;
+      const currentToken = token;
+      if (isOffline || !isOnline) {
       const tempId = `temp-${Date.now()}`;
       const optimisticExpense = { ...newExpenseData, id: tempId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Expense;
       const updated = [optimisticExpense, ...expenses];
@@ -171,11 +173,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify(newExpenseData)
       });
       if (res.ok) {
@@ -225,16 +225,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleDeleteExpense = async (id: string) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const isOnline = navigator.onLine;
+      const currentToken = token;
+      if (isOffline || !isOnline) {
       setExpenses(expenses.filter(e => e.id !== id));
       queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses/${id}`, 'DELETE');
       return;
     }
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses/${id}`, { 
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (res.ok) {
         setExpenses(expenses.filter(e => e.id !== id));
@@ -245,18 +246,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleSaveBudgets = async (newBudgets: CategoryBudget[]) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const isOnline = navigator.onLine;
+      const currentToken = token;
+      if (isOffline || !isOnline) {
       setBudgets(newBudgets);
       queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/budgets`, 'POST', newBudgets);
       addInAppNotification('Budgets Updated (Offline)', 'Category spending caps saved locally and queued.', 'insight', false);
       setNotifications(loadNotificationsFromStorage());
       return;
     }
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/budgets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify(newBudgets)
       });
       if (res.ok) {
@@ -270,16 +272,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleSaveCategories = async (newCats: Record<string, { color: string; bg: string; icon: string }>) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const isOnline = navigator.onLine;
+      const currentToken = token;
+      if (isOffline || !isOnline) {
       setCategories(newCats);
       queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/categories`, 'POST', newCats);
       return;
     }
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/categories`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify(newCats)
       });
       if (res.ok) {
@@ -296,28 +299,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleLoadSampleData = async () => {
-    const token = await getToken();
-    const samples = getSampleInitialExpenses();
-    for (const sample of samples) {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ ...sample, id: undefined })
+    try {
+      const currentToken = token;
+      const samples = getSampleInitialExpenses();
+      for (const sample of samples) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+          body: JSON.stringify({ ...sample, id: undefined })
+        });
+      }
+      
+      // Reload expenses
+      const expRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
+      if (expRes.ok) setExpenses(await expRes.json());
+      
+      addInAppNotification('Sample Data Loaded', 'Pre-loaded transactions for testing.', 'streak', true);
+      setNotifications(loadNotificationsFromStorage());
+    } catch (err) {
+      console.error('Error loading sample data:', err);
     }
-    
-    // Reload expenses
-    const expRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (expRes.ok) setExpenses(await expRes.json());
-    
-    addInAppNotification('Sample Data Loaded', 'Pre-loaded transactions for testing.', 'streak', true);
-    setNotifications(loadNotificationsFromStorage());
   };
 
   const handleAddGoal = async (newGoalData: Omit<Goal, 'id' | 'currentAmount' | 'createdAt'>) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const currentToken = token;
+      const isOnline = navigator.onLine;
+      if (isOffline || !isOnline) {
       const tempId = `temp-${Date.now()}`;
       const optimisticGoal = { ...newGoalData, id: tempId, currentAmount: 0, createdAt: new Date().toISOString() } as Goal;
       setGoals(prev => [optimisticGoal, ...prev]);
@@ -325,11 +335,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addInAppNotification('Goal Added (Offline)', `Successfully added ${optimisticGoal.title} locally.`, 'streak', true);
       return;
     }
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify({ ...newGoalData, currentAmount: 0 })
       });
       if (res.ok) {
@@ -343,16 +351,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleDeleteGoal = async (id: string) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    try {
+      const currentToken = token;
+      const isOnline = navigator.onLine;
+      if (isOffline || !isOnline) {
       setGoals(prev => prev.filter(g => g.id !== id));
       queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}`, 'DELETE');
       return;
     }
-    try {
-      const token = await getToken();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}`, { 
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${currentToken}` }
       });
       if (res.ok) {
         setGoals(prev => prev.filter(g => g.id !== id));
@@ -363,17 +372,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleContributeToGoal = async (id: string, amount: number) => {
-    if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-      setGoals(prev => prev.map(g => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)));
-      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}/contribute`, 'POST', { amount });
-      addInAppNotification('Contribution Queued', `Contribution of ₹${amount} queued offline.`, 'streak', true);
-      return;
-    }
     try {
-      const token = await getToken();
+      const currentToken = token;
+      const isOnline = navigator.onLine;
+      if (isOffline || !isOnline) {
+        setGoals(prev => prev.map(g => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)));
+        queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}/contribute`, 'POST', { amount });
+        addInAppNotification('Contribution Queued', `Contribution of ₹${amount} queued offline.`, 'streak', true);
+        return;
+      }
+      
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}/contribute`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
         body: JSON.stringify({ amount })
       });
       if (res.ok) {

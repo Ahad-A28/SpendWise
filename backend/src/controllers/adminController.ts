@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express';
 import AppSetting from '../models/AppSetting.js';
 import CreditLog from '../models/CreditLog.js';
-import { createClerkClient } from '@clerk/express';
-
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+import User from '../models/User.js';
+import Expense from '../models/Expense.js';
+import Budget from '../models/Budget.js';
+import Goal from '../models/Goal.js';
 
 interface CreditConfig {
   credits: number;
@@ -22,22 +23,37 @@ export const getAdminUsers = async (req: Request, res: Response) => {
     const settings = await AppSetting.find({ key: 'aiCreditConfig' });
     const now = Date.now();
     
-    // Fetch users from Clerk
-    const userIds = settings.map(s => s.userId).filter(Boolean);
-    let clerkUsers: any[] = [];
-    if (userIds.length > 0) {
+    // Fetch users from MongoDB
+    const allUserIds = settings.map(s => s.userId).filter(Boolean);
+    // Filter valid 24-char hex strings for MongoDB ObjectIds
+    const validMongoIds = allUserIds.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+    
+    let mongoUsers: any[] = [];
+    if (validMongoIds.length > 0) {
       try {
-        const clerkRes = await clerkClient.users.getUserList({ userId: userIds, limit: 100 });
-        clerkUsers = clerkRes.data;
-      } catch (clerkErr) {
-        console.error('Error fetching clerk users:', clerkErr);
+        mongoUsers = await User.find({ _id: { $in: validMongoIds } });
+      } catch (dbErr) {
+        console.error('Error fetching users:', dbErr);
       }
     }
 
-    const clerkUserMap = new Map();
-    clerkUsers.forEach(u => clerkUserMap.set(u.id, u));
+    const userMap = new Map();
+    mongoUsers.forEach(u => userMap.set(u._id.toString(), u));
 
-    const usersData = settings.map(setting => {
+    // Cleanup: delete old Clerk data (where userId starts with user_)
+    const invalidIds = allUserIds.filter(id => id.startsWith('user_'));
+    if (invalidIds.length > 0) {
+       await AppSetting.deleteMany({ userId: { $in: invalidIds } });
+       await (Expense as any).deleteMany({ userId: { $in: invalidIds } });
+       await (Budget as any).deleteMany({ userId: { $in: invalidIds } });
+       await (Goal as any).deleteMany({ userId: { $in: invalidIds } });
+       await (CreditLog as any).deleteMany({ userId: { $in: invalidIds } });
+    }
+
+    // Filter settings to only include valid users or global configs
+    const validSettings = settings.filter(s => !s.userId || userMap.has(s.userId.toString()) || s.userId === 'legacy');
+
+    const usersData = validSettings.map(setting => {
       const data: CreditConfig = typeof setting.value === 'object' ? setting.value : {
         credits: Number(setting.value) || 0,
         requestCount: 0,
@@ -51,21 +67,20 @@ export const getAdminUsers = async (req: Request, res: Response) => {
         ? Math.ceil((data.blockedUntil! - now) / (1000 * 60))
         : 0;
 
-      const clerkUser = setting.userId ? clerkUserMap.get(setting.userId) : null;
-      const primaryEmailObj = clerkUser?.emailAddresses?.find((e: any) => e.id === clerkUser.primaryEmailAddressId);
+      const user = setting.userId ? userMap.get(setting.userId) : null;
       
       let email = 'Unknown Email';
       let name = 'Unknown User';
       
-      if (clerkUser) {
-        email = primaryEmailObj?.emailAddress || 'Unknown Email';
-        name = clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`.trim() : 'Unknown User';
+      if (user) {
+        email = user.email || 'Unknown Email';
+        name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Unknown User';
       } else if (!setting.userId) {
         name = 'Legacy Global Config';
-        email = 'No Clerk ID';
+        email = 'No User ID';
       }
 
-      const imageUrl = clerkUser?.imageUrl;
+      const imageUrl = user?.avatarUrl;
       const finalUserId = setting.userId || `legacy_${setting._id.toString()}`;
 
       return {
@@ -174,7 +189,7 @@ export const getCreditLogs = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    const logs = await CreditLog.find({ userId }).sort({ createdAt: -1 }).limit(100);
+    const logs = await (CreditLog as any).find({ userId }).sort({ createdAt: -1 }).limit(100);
     res.json(logs);
   } catch (error) {
     console.error('Admin get credit logs error:', error);
