@@ -47,10 +47,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const headers = { 'Authorization': `Bearer ${token}` };
         
         const [expRes, budgRes, catRes, goalRes] = await Promise.all([
-          fetch('http://localhost:5000/api/expenses', { headers }),
-          fetch('http://localhost:5000/api/budgets', { headers }),
-          fetch('http://localhost:5000/api/categories', { headers }),
-          fetch('http://localhost:5000/api/goals', { headers })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/budgets`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/categories`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals`, { headers })
         ]);
         
         if (expRes.ok) setExpenses(await expRes.json());
@@ -93,7 +93,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setNotifications(loadNotificationsFromStorage());
 
       // Reload expenses after sync
-      const expRes = await fetch('http://localhost:5000/api/expenses', { headers: { 'Authorization': `Bearer ${token}` } });
+      const expRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (expRes.ok) setExpenses(await expRes.json());
       
     } catch (err) {
@@ -131,7 +131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const optimisticExpense = { ...newExpenseData, id: tempId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Expense;
       const updated = [optimisticExpense, ...expenses];
       setExpenses(updated);
-      queueRequest('http://localhost:5000/api/expenses', 'POST', newExpenseData);
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, 'POST', newExpenseData);
       
       const categoryBudget = budgets.find(b => b.category === optimisticExpense.category);
       if (categoryBudget) {
@@ -173,7 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const token = await getToken();
-      const res = await fetch('http://localhost:5000/api/expenses', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newExpenseData)
@@ -227,12 +227,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleDeleteExpense = async (id: string) => {
     if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setExpenses(expenses.filter(e => e.id !== id));
-      queueRequest(`http://localhost:5000/api/expenses/${id}`, 'DELETE');
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses/${id}`, 'DELETE');
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch(`http://localhost:5000/api/expenses/${id}`, { 
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses/${id}`, { 
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -247,14 +247,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleSaveBudgets = async (newBudgets: CategoryBudget[]) => {
     if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setBudgets(newBudgets);
-      queueRequest('http://localhost:5000/api/budgets', 'POST', newBudgets);
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/budgets`, 'POST', newBudgets);
       addInAppNotification('Budgets Updated (Offline)', 'Category spending caps saved locally and queued.', 'insight', false);
       setNotifications(loadNotificationsFromStorage());
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch('http://localhost:5000/api/budgets', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/budgets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newBudgets)
@@ -272,12 +272,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleSaveCategories = async (newCats: Record<string, { color: string; bg: string; icon: string }>) => {
     if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setCategories(newCats);
-      queueRequest('http://localhost:5000/api/categories', 'POST', newCats);
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/categories`, 'POST', newCats);
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch('http://localhost:5000/api/categories', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newCats)
@@ -299,7 +299,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const token = await getToken();
     const samples = getSampleInitialExpenses();
     for (const sample of samples) {
-      await fetch('http://localhost:5000/api/expenses', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...sample, id: undefined })
@@ -307,7 +307,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     // Reload expenses
-    const expRes = await fetch('http://localhost:5000/api/expenses', {
+    const expRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/expenses`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (expRes.ok) setExpenses(await expRes.json());
@@ -321,13 +321,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const tempId = `temp-${Date.now()}`;
       const optimisticGoal = { ...newGoalData, id: tempId, currentAmount: 0, createdAt: new Date().toISOString() } as Goal;
       setGoals(prev => [optimisticGoal, ...prev]);
-      queueRequest('http://localhost:5000/api/goals', 'POST', { ...newGoalData, currentAmount: 0 });
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals`, 'POST', { ...newGoalData, currentAmount: 0 });
       addInAppNotification('Goal Added (Offline)', `Successfully added ${optimisticGoal.title} locally.`, 'streak', true);
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch('http://localhost:5000/api/goals', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...newGoalData, currentAmount: 0 })
@@ -345,12 +345,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleDeleteGoal = async (id: string) => {
     if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setGoals(prev => prev.filter(g => g.id !== id));
-      queueRequest(`http://localhost:5000/api/goals/${id}`, 'DELETE');
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}`, 'DELETE');
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch(`http://localhost:5000/api/goals/${id}`, { 
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}`, { 
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -365,13 +365,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleContributeToGoal = async (id: string, amount: number) => {
     if (isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       setGoals(prev => prev.map(g => (g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g)));
-      queueRequest(`http://localhost:5000/api/goals/${id}/contribute`, 'POST', { amount });
+      queueRequest(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}/contribute`, 'POST', { amount });
       addInAppNotification('Contribution Queued', `Contribution of ₹${amount} queued offline.`, 'streak', true);
       return;
     }
     try {
       const token = await getToken();
-      const res = await fetch(`http://localhost:5000/api/goals/${id}/contribute`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/goals/${id}/contribute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ amount })

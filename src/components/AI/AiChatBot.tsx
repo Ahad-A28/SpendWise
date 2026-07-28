@@ -180,7 +180,7 @@ export const AiChatBot: React.FC<AiChatBotProps> = ({ expenses, budgets, initial
     const fetchCredits = async () => {
       const token = await getToken();
       if (!token) return;
-      fetch('http://localhost:5000/api/chat/credits', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/chat/credits`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(r => r.json())

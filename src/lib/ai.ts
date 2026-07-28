@@ -9,7 +9,7 @@ export async function generateAIResponse(
   fileData?: { name: string; mimeType: string; data: string } | null
 ): Promise<{ text?: string, error?: string, actionExecuted?: string, creditsRemaining?: number }> {
   try {
-    const response = await fetch('http://localhost:5000/api/chat', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000")}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
