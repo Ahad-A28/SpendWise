@@ -33,10 +33,7 @@ connectDB().then(async () => {
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: '*',
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 import { clerkMiddleware, getAuth } from '@clerk/express';
