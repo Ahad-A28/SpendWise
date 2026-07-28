@@ -261,8 +261,8 @@ export const AiChatBot: React.FC<AiChatBotProps> = ({ expenses, budgets, initial
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 5MB.');
+    if (file.size > 3 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 3MB.');
       return;
     }
 
