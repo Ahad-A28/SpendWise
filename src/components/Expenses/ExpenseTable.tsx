@@ -24,6 +24,7 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
 
   const filtered = expenses.filter(e => {
     const matchesSearch =
@@ -64,11 +65,7 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
         </div>
         {expenses.length > 0 && onDeleteAllExpenses && (
           <button
-            onClick={() => {
-              if (window.confirm('WARNING: This will permanently delete ALL your transactions. This action cannot be undone. Are you sure?')) {
-                onDeleteAllExpenses();
-              }
-            }}
+            onClick={() => setShowDeleteAllModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-lg transition-colors border border-rose-200 dark:border-rose-800"
             title="Delete all transactions"
           >
@@ -242,6 +239,42 @@ export const ExpenseTable: React.FC<ExpenseTableProps> = ({
             })}
           </div>
         </>
+      )}
+
+      {/* Delete All Modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Delete All Transactions?</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                  This action is permanent and cannot be undone. All your expense history will be completely erased.
+                </p>
+              </div>
+            </div>
+            <div className="flex bg-slate-50 dark:bg-slate-800/50 p-4 gap-3">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onDeleteAllExpenses?.();
+                  setShowDeleteAllModal(false);
+                }}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-colors shadow-sm"
+              >
+                Yes, Delete All
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
